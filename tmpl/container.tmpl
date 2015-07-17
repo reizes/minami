@@ -56,8 +56,10 @@
         <?js if (doc.description) { ?>
             <div class="description"><?js= doc.description ?></div>
         <?js } ?>
-
-        <?js= self.partial('details.tmpl', doc) ?>
+        
+		<?js if (doc.kind !== 'function') { ?>
+        	<?js= self.partial('details.tmpl', doc) ?>
+        <?js } ?>
 
         <?js if (doc.kind!=='function' && doc.examples && doc.examples.length) { ?>
             <h3>Example<?js= doc.examples.length > 1? 's':'' ?></h3>
