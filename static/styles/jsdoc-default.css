@@ -30,6 +30,21 @@ a:hover {
   text-decoration: underline
 }
 
+a.absent {
+  color: #cc0000;
+}
+ 
+a.anchor {
+  display: block;
+  padding-left: 30px;
+  margin-left: -30px;
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+}
+
 p, ul, ol, blockquote {
   margin-bottom: 1em;
 }
@@ -139,7 +154,7 @@ nav {
 
 nav h3 {
   margin-top: 12px;
-  font-size: 13px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: 700;
@@ -149,7 +164,27 @@ nav h3 {
   color: #000;
 }
 
-nav ul {
+nav h4 {
+  margin-top: 5px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 18px;
+  padding: 0 10px;
+  color: #666;
+}
+
+nav h5 {
+  margin-top: 5px;
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  line-height: 18px;
+  padding: 0 15px;
+  color: #666;
+}
+
+nav ul,
+nav li.nav-li-title {
   font-family: 'Lucida Grande', 'Lucida Sans Unicode', arial, sans-serif;
   font-size: 100%;
   line-height: 17px;
@@ -159,7 +194,9 @@ nav ul {
 }
 
 nav ul a,
-nav ul a:active {
+nav ul a:active,
+nav li.nav-li-title a,
+nav li.nav-li-title a:active {
   font-family: 'Montserrat', sans-serif;
   line-height: 18px;
   padding: 0;
@@ -168,16 +205,19 @@ nav ul a:active {
 }
 
 nav ul a:hover,
-nav ul a:active {
+nav ul a:active,
+nav li.nav-li-title a:hover,
+nav li.nav-li-title a:active {
   color: hsl(200, 100%, 43%);
   text-decoration: none;
 }
 
 nav > ul {
-  padding: 0 10px;
+  padding: 0 20px;
 }
 
-nav > ul > li > a {
+nav > ul > li > a,
+nav li.nav-li-title > a {
   color: #000;
 }
 
@@ -191,8 +231,9 @@ nav ul ul a {
 }
 
 nav ul ul a,
-nav ul ul a:active {
-  padding-left: 20px
+nav ul ul a:active,
+nav li.nav-li-title > ul {
+  padding-left: 10px
 }
 
 nav h2 {
@@ -540,6 +581,48 @@ dl.param-type {
   height: 100%;
   background: hsla(0, 0%, 0%, 0.5);
   z-index: 1;
+}
+
+ 
+table {
+  padding: 0;
+}
+table tr {
+  border-top: 1px solid #cccccc;
+  background-color: white;
+  margin: 0;
+  padding: 0;
+}
+ 
+table tr:nth-child(2n) {
+  background-color: #e8e8e8;
+}
+ 
+table tr th {
+  font-weight: bold;
+  border: 1px solid #cccccc;
+  text-align: center;
+  margin: 0;
+  padding: 6px 13px;
+  background-color:#eeeeff;
+  text-transform:uppercase;
+  font-size:14px;
+}
+ 
+table tr td {
+  border: 1px solid #cccccc;
+  text-align: left;
+  margin: 0;
+  padding: 6px 13px;
+  font-size:14px;
+}
+ 
+table tr th :first-child, table tr td :first-child {
+  margin-top: 0;
+}
+ 
+table tr th :last-child, table tr td :last-child {
+  margin-bottom: 0;
 }
 
 @media only screen and (min-width: 320px) and (max-width: 680px) {
