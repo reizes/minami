@@ -3,7 +3,8 @@
 
 var doop = require('jsdoc/util/doop');
 var fs = require('jsdoc/fs');
-var helper = require('jsdoc/util/templateHelper');
+//var helper = require('jsdoc/util/templateHelper');
+var helper = require('../templateHelper.custom');
 var logger = require('jsdoc/util/logger');
 var path = require('jsdoc/path');
 var taffy = require('taffydb').taffy;
@@ -46,7 +47,7 @@ function needsSignature(doclet) {
     var needsSig = false;
 
     // function and class definitions always get a signature
-    if (doclet.kind === 'function' || doclet.kind === 'class') {
+    if (doclet.kind === 'function' || doclet.kind === 'class' || doclet.kind === 'jq-plugin') {
         needsSig = true;
     }
     // typedefs that contain functions get a signature, too
@@ -277,7 +278,7 @@ function attachModuleSymbols(doclets, modules) {
                 .map(function(symbol) {
                     symbol = doop(symbol);
 
-                    if (symbol.kind === 'class' || symbol.kind === 'function') {
+                    if (symbol.kind === 'class' || symbol.kind === 'function' || symbol.kind ==='jq-plugin') {
                         symbol.name = symbol.name.replace('module:', '(require("') + '"))';
                     }
 
@@ -287,44 +288,140 @@ function attachModuleSymbols(doclets, modules) {
     });
 }
 
-function buildMemberNav(items, itemHeading, itemsSeen, linktoFn) {
+//2015.6.9 reizes {{
+function buildNavItemList(items, parentName, itemsSeen, linktoFn, hLevel) {
+    var itemsNav = '';
+    var todomore=[];
+
+    if (items.length) {
+        
+        items.forEach(function (item) {
+        	var data=find({memberof: item.longname});
+        	if (data.length) {
+        		todomore.push({items:data, longname:item.longname, name:item.name});
+        	} else {
+	            itemsNav += "<li data-type='method'>";
+	            itemsNav += linkto(item.longname, item.name);
+	            itemsNav += "</li>";
+        	}
+        });
+        
+        if (todomore.length>0) {
+        	todomore.forEach(function (data) {
+        		itemsNav += '<li class="nav-li-title">' + linktoFn(data.longname, parentName+'.'+data.name);
+        		itemsNav += buildMemberNav(data.items, '', itemsSeen, linktoFn, hLevel);
+        		itemsNav += '</li>';
+        	});
+        }
+    }
+
+    return itemsNav;
+}
+
+function buildMemberNav(items, itemHeading, itemsSeen, linktoFn, hLevel) {
     var nav = '';
 
     if (items.length) {
         var itemsNav = '';
 
         items.forEach(function(item) {
-            var methods = find({kind:'function', memberof: item.longname});
-            var members = find({kind:'member', memberof: item.longname});
-
             if ( !hasOwnProp.call(item, 'longname') ) {
-                itemsNav += '<li>' + linktoFn('', item.name);
-                itemsNav += '</li>';
+                itemsNav += '<li>' + linktoFn('', item.name) + '</li>';
             } else if ( !hasOwnProp.call(itemsSeen, item.longname) ) {
-                itemsNav += '<li>' + linktoFn(item.longname, item.name.replace(/^module:/, ''));
-                if (methods.length) {
-                    itemsNav += "<ul class='methods'>";
-
-                    methods.forEach(function (method) {
-                        itemsNav += "<li data-type='method'>";
-                        itemsNav += linkto(method.longname, method.name);
-                        itemsNav += "</li>";
-                    });
-
-                    itemsNav += "</ul>";
-                }
+            	var innerul='', cls='';
+            	innerul += buildNavItemList(find({kind:'constant', memberof: item.longname}), item.name, itemsSeen, linktoFn, hLevel);
+            	innerul += buildNavItemList(find({kind:'function', memberof: item.longname}), item.name, itemsSeen, linktoFn, hLevel); 
+                //itemsNav += buildMemberNav(find({kind:'member', memberof: item.longname}), '', itemsSeen, linktoFn, hLevel+1); 
+            	innerul += buildNavItemList(find({kind:'member', memberof: item.longname}), item.name, itemsSeen, linktoFn, hLevel);
+            	
+            	if (innerul!=='') {
+            		itemsNav += '<li class="nav-li-title">';
+            	} else {
+            		itemsNav += '<li>';
+            	}
+            	
+                itemsNav += linktoFn(item.longname, item.name.replace(/^module:/, ''));
+            	if (innerul!=='') {
+                    itemsNav += "<ul class='methods'>"+innerul+"</ul>";
+            	}
                 itemsNav += '</li>';
                 itemsSeen[item.longname] = true;
             }
         });
 
         if (itemsNav !== '') {
-            nav += '<h3>' + itemHeading + '</h3><ul>' + itemsNav + '</ul>';
+        	if (itemHeading!=='') {
+        		nav += '<h'+hLevel+'>' + itemHeading + '</h'+hLevel+'>';
+        	} else {
+        		
+        	}
+        	
+            nav += '<ul>' + itemsNav + '</ul>';
         }
     }
 
     return nav;
 }
+//}}
+// 2015.6.9 reizes {{
+function buildAngularNav(items, itemHeading, itemsSeen, linktoFn, hLevel) {
+    var nav = '';
+    var h1=hLevel+1;
+    var h2=hLevel+2;
+
+    if (items.length) {
+        var itemsNav = '';
+
+        items.forEach(function(item) {
+        	var tmpNav='';
+        	tmpNav+=buildMemberNav(find({kind:'ng-directive', memberof: item.longname}), 'directive', itemsSeen, linktoFn, h2);
+        	tmpNav+=buildMemberNav(find({kind:'ng-provider', memberof: item.longname}), 'provider', itemsSeen, linktoFn, h2);
+        	tmpNav+=buildMemberNav(find({kind:'ng-service', memberof: item.longname}), 'service', itemsSeen, linktoFn, h2);
+        	tmpNav+=buildMemberNav(find({kind:'ng-constant', memberof: item.longname}), 'constant', itemsSeen, linktoFn, h2);
+        	tmpNav+=buildMemberNav(find({kind:'ng-value', memberof: item.longname}), 'value', itemsSeen, linktoFn, h2);
+        	tmpNav+=buildMemberNav(find({kind:'ng-factory', memberof: item.longname}), 'factory', itemsSeen, linktoFn, h2);
+        	tmpNav+=buildMemberNav(find({kind:'ng-filter', memberof: item.longname}), 'filter', itemsSeen, linktoFn, h2);
+        	if (tmpNav!='') {
+        		itemsNav+='<h'+h1+'>[&nbsp;' + linkto(item.longname, item.longname) + '&nbsp;]</h'+h1+'>'+tmpNav;
+        	}
+        });
+
+        if (itemsNav !== '') {
+            nav += '<h'+hLevel+'>' + itemHeading + '</h'+hLevel+'>' + itemsNav + '';
+        }
+    }
+
+    return nav;
+}
+
+// }} by reizes 6.9
+
+//2015.6.10 reizes {{
+function buildjQueryNav(items, itemHeading, itemsSeen, linktoFn, hLevel) {
+    var nav = '';
+    var h1=hLevel+1;
+    var h2=hLevel+2;
+
+    if (items.length) {
+        var itemsNav = '';
+
+        items.forEach(function(item) {
+        	var tmpNav='';
+        	tmpNav+=buildMemberNav(find({memberof: item.longname}), '', itemsSeen, linktoFn, h2);
+        	if (tmpNav!='') {
+        		itemsNav+='<h'+h1+'>[&nbsp;' + linkto(item.longname, item.longname) + '&nbsp;]</h'+h1+'>'+tmpNav;
+        	}
+        });
+
+        if (itemsNav !== '') {
+            nav += '<h'+hLevel+'>' + itemHeading + '</h'+hLevel+'>' + itemsNav + '';
+        }
+    }
+
+    return nav;
+}
+
+// }} by reizes 6.9
 
 function linktoTutorial(longName, name) {
     return tutoriallink(name);
@@ -353,14 +450,16 @@ function buildNav(members) {
     var seen = {};
     var seenTutorials = {};
 
-    nav += buildMemberNav(members.classes, 'Classes', seen, linkto);
-    nav += buildMemberNav(members.modules, 'Modules', {}, linkto);
-    nav += buildMemberNav(members.externals, 'Externals', seen, linktoExternal);
-    nav += buildMemberNav(members.events, 'Events', seen, linkto);
-    nav += buildMemberNav(members.namespaces, 'Namespaces', seen, linkto);
-    nav += buildMemberNav(members.mixins, 'Mixins', seen, linkto);
-    nav += buildMemberNav(members.tutorials, 'Tutorials', seenTutorials, linktoTutorial);
-    nav += buildMemberNav(members.interfaces, 'Interfaces', seen, linkto);
+    nav += buildMemberNav(members.namespace, 'Namespaces', seen, linkto, 3);
+    nav += buildMemberNav(members.module, 'Modules', {}, linkto, 3);
+    nav += buildMemberNav(members.interface, 'Interfaces', seen, linkto, 3);
+    nav += buildMemberNav(members.class, 'Classes', seen, linkto, 3);
+    nav += buildMemberNav(members.event, 'Events', seen, linkto, 3);
+    nav += buildMemberNav(members.mixin, 'Mixins', seen, linkto, 3);
+    nav += buildAngularNav(members['ng-module'], 'Angular Modules', seen, linkto, 3);	 // 2015.6.9 reizes
+    nav += buildjQueryNav(members['jq-plugin'], 'jQuery Plugins', seen, linkto, 3);	 // 2015.6.10 reizes
+    nav += buildMemberNav(members.external, 'Externals', seen, linktoExternal, 3);
+    nav += buildMemberNav(members.tutorials, 'Tutorials', seenTutorials, linktoTutorial, 3);
 
     if (members.globals.length) {
         var globalNav = '';
@@ -394,6 +493,7 @@ exports.publish = function(taffyData, opts, tutorials) {
 
     var conf = env.conf.templates || {};
     conf.default = conf.default || {};
+
 
     var templatePath = path.normalize(opts.template);
     view = new template.Template( path.join(templatePath, 'tmpl') );
@@ -570,7 +670,7 @@ exports.publish = function(taffyData, opts, tutorials) {
 
     // once for all
     view.nav = buildNav(members);
-    attachModuleSymbols( find({ longname: {left: 'module:'} }), members.modules );
+    attachModuleSymbols( find({ longname: {left: 'module:'} }), members.module );
 
     // generate the pretty-printed source files first so other pages can link to them
     if (outputSourceFiles) {
@@ -592,43 +692,15 @@ exports.publish = function(taffyData, opts, tutorials) {
     indexUrl);
 
     // set up the lists that we'll use to generate pages
-    var classes = taffy(members.classes);
-    var modules = taffy(members.modules);
-    var namespaces = taffy(members.namespaces);
-    var mixins = taffy(members.mixins);
-    var externals = taffy(members.externals);
-    var interfaces = taffy(members.interfaces);
-
     Object.keys(helper.longnameToUrl).forEach(function(longname) {
-        var myModules = helper.find(modules, {longname: longname});
-        if (myModules.length) {
-            generate('Module', myModules[0].name, myModules, helper.longnameToUrl[longname]);
-        }
-
-        var myClasses = helper.find(classes, {longname: longname});
-        if (myClasses.length) {
-            generate('Class', myClasses[0].name, myClasses, helper.longnameToUrl[longname]);
-        }
-
-        var myNamespaces = helper.find(namespaces, {longname: longname});
-        if (myNamespaces.length) {
-            generate('Namespace', myNamespaces[0].name, myNamespaces, helper.longnameToUrl[longname]);
-        }
-
-        var myMixins = helper.find(mixins, {longname: longname});
-        if (myMixins.length) {
-            generate('Mixin', myMixins[0].name, myMixins, helper.longnameToUrl[longname]);
-        }
-
-        var myExternals = helper.find(externals, {longname: longname});
-        if (myExternals.length) {
-            generate('External', myExternals[0].name, myExternals, helper.longnameToUrl[longname]);
-        }
-
-        var myInterfaces = helper.find(interfaces, {longname: longname});
-        if (myInterfaces.length) {
-            generate('Interface', myInterfaces[0].name, myInterfaces, helper.longnameToUrl[longname]);
-        }
+    	Object.keys(members).forEach(function(kind) {
+    		if (kind!=='tutorials' && kind!=='globals') {
+    			var myModules = helper.find(taffy(members[kind]), {longname: longname});
+    	        if (myModules.length) {
+    	            generate(kind, myModules[0].name, myModules, helper.longnameToUrl[longname]);
+    	        }
+    		}
+    	})
     });
 
     // TODO: move the tutorial functions to templateHelper.js
