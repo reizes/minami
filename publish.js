@@ -404,13 +404,10 @@ function buildjQueryNav(items, itemHeading, itemsSeen, linktoFn, hLevel) {
 
     if (items.length) {
         var itemsNav = '';
-
         items.forEach(function(item) {
         	var tmpNav='';
         	tmpNav+=buildMemberNav(find({memberof: item.longname}), '', itemsSeen, linktoFn, h2);
-        	if (tmpNav!='') {
-        		itemsNav+='<h'+h1+'>[&nbsp;' + linkto(item.longname, item.longname) + '&nbsp;]</h'+h1+'>'+tmpNav;
-        	}
+        	itemsNav+='<h'+h1+'>[&nbsp;' + linkto(item.longname, item.longname) + '&nbsp;]</h'+h1+'>'+tmpNav;
         });
 
         if (itemsNav !== '') {
